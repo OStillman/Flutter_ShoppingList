@@ -13,6 +13,9 @@ class _MainScreenState extends State<MainScreen> {
   List<String> _currentItems = List<String>();
   List<String> _removedItems = List<String>();
 
+  final _formKey = GlobalKey<FormState>();
+  final fieldController = TextEditingController();
+
   @override
   void initState() {
     _currentItems.addAll(_items);
@@ -33,6 +36,7 @@ class _MainScreenState extends State<MainScreen> {
     setState(() {
       print(_items.toString());
       _items.clear();
+      _currentItems.remove("Search");
       for (String item in _currentItems) {
         final bool there = _items.contains(item);
         if (!there) {
@@ -47,8 +51,7 @@ class _MainScreenState extends State<MainScreen> {
     bool _saved = true;
     if (_items.length != _currentItems.length) {
       _saved = false;
-    }
-    else {
+    } else {
       for (String item in _currentItems) {
         if (!_items.contains(item)) {
           _saved = false;
@@ -61,26 +64,24 @@ class _MainScreenState extends State<MainScreen> {
   bool canUndo() {
     if (_removedItems.length > 0) {
       return true;
-    }
-    else {
+    } else {
       return false;
     }
   }
 
-  //To use the string it needs to be converted into a widget
+//To use the string it needs to be converted into a widget
   Widget _appBarTitle = new Text(appTitle);
 
   //We need to return a scaffold for the UI structure
   @override
   Widget build(BuildContext context) {
-    if (_currentItems.length > 0 ){
+    if (_currentItems.length > 0) {
       return Scaffold(
         appBar: _buildBar(context),
         body: _buildList(context),
         resizeToAvoidBottomPadding: false,
       );
-    }
-    else{
+    } else {
       return Scaffold(
         appBar: _buildBar(context),
         body: Center(
@@ -97,44 +98,81 @@ class _MainScreenState extends State<MainScreen> {
         backgroundColor: mainAppColor,
         title: _appBarTitle,
         actions: <Widget>[
-          IconButton(icon: Icon(Icons.add), onPressed: () {
-            Navigator.of(context).pushNamed(addPageTag);
-          }),
           IconButton(
               icon: Icon(Icons.undo),
               color: canUndo() ? Colors.white : Colors.black,
               onPressed: canUndo() ? undo : () {}),
-          IconButton(icon: Icon(Icons.save),
+          IconButton(
+              icon: Icon(Icons.save),
               color: isSaved() ? Colors.black : Colors.white,
               onPressed: save),
-        ]
-    );
+        ]);
   }
 
   Widget _buildList(BuildContext context) {
+    _currentItems.remove("Search");
+    _currentItems.add("Search");
     return ListView(
-      children:
-      this._currentItems.map((item) => _buildListItem(context, item)).toList(),
+      children: this
+          ._currentItems
+          .map((item) => _buildListItem(context, item))
+          .toList(),
     );
   }
 
   Widget _buildListItem(BuildContext context, String item) {
-    return ListTile(
-      title: Text(
-        item,
-      ),
-      trailing: Icon(
-        Icons.remove_circle,
-        color: Colors.red,
-      ),
-      onTap: () {
-        print("Remove");
-        setState(() {
-          _currentItems.remove(item);
-          _removedItems.add(item);
-          print(_currentItems.toString());
-        });
-      },
+    print(item);
+    if (item != "Search") {
+      return ListTile(
+        title: Text(
+          item,
+        ),
+        trailing: Icon(
+          Icons.remove_circle,
+          color: Colors.red,
+        ),
+        onTap: () {
+          print("Remove");
+          setState(() {
+            _currentItems.remove(item);
+            _removedItems.add(item);
+            print(_currentItems.toString());
+          });
+        },
+      );
+    } else {
+      return _addSearch(context);
+    }
+  }
+
+  Widget _addSearch(BuildContext context) {
+    return Form(
+      key: _formKey,
+      autovalidate: true,
+      child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            TextFormField(
+              maxLength: 54,
+              controller: fieldController,
+              decoration: InputDecoration(
+                hintText: itemHint,
+              ),
+              onFieldSubmitted: (String value) {
+                final text = value[0].toUpperCase() + value.substring(1);
+                setState(() {
+                  _currentItems.add(text);
+                  _currentItems.sort();
+                });
+                fieldController.clear();
+              },
+              validator: (value) {
+                if (value.isEmpty) {
+                  return "Please enter some text";
+                }
+              },
+            ),
+          ]),
     );
   }
 }
